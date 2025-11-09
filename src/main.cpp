@@ -64,13 +64,15 @@ void setup() {
     // 3. Setup PID
     pid.SetTunings(Kp, Ki, Kd);
     pid.SetSampleTimeUs(1000); // 1ms sample time
-    pid.SetMode(QuickPID::Mode::automatic); [1]
+    pid.SetMode(QuickPID::Control(1));
 
     // 4. Wait for Run 1
     currentState = WAIT_FOR_RUN_1;
     Serial.println("Calibration complete. Place at START.");
     Serial.println("Press button to begin Run 1 (Mapping)...");
 }
+
+void runPID();
 
 void loop() {
     

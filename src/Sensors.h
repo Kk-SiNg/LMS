@@ -32,7 +32,7 @@ public:
 private:
     QTRSensors qtr;
     // BUGFIX: This must be an array to hold the values
-    uint16_t sensorValues; 
+    uint16_t sensorValues[8]; 
 
     // Setpoint is the "perfectly centered" value (SensorCount-1) * 1000 / 2
     const int16_t setpoint = (SensorCount - 1) * 1000 / 2; // = 3500

@@ -10,11 +10,11 @@ Sensors::Sensors() {
     // Initialize the QTRSensors object
     qtr.setTypeRC();
     // BUGFIX: Added to define this as an array [1, 2, 3, 4]
-    qtr.setSensorPins((const uint8_t){
+    qtr.setSensorPins((const uint8_t[]){
         QTR_PIN_1, QTR_PIN_2, QTR_PIN_3, QTR_PIN_4,
         QTR_PIN_5, QTR_PIN_6, QTR_PIN_7, QTR_PIN_8
     }, SensorCount);
-    qtr.setEmitterPin(QTR_EMITTER_PIN); [1, 2]
+    qtr.setEmitterPin(QTR_EMITTER_PIN);
     qtr.setTimeout(2500); // 2.5ms timeout
 }
 
@@ -26,7 +26,7 @@ void Sensors::setup() {
 
     // Calibration: 10 seconds (20ms * 500)
     for (uint16_t i = 0; i < 500; i++) {
-        qtr.calibrate(); [6, 5, 7]
+        qtr.calibrate();
         delay(20);
     }
 
@@ -52,7 +52,7 @@ void Sensors::setup() {
 int16_t Sensors::getLineError() {
     // Get calibrated line position (0-7000)
     // This function reads the calibrated values into our sensorValues array
-    uint16_t position = qtr.readLineBlack(sensorValues); [3, 8]
+    uint16_t position = qtr.readLineBlack(sensorValues);
     
     // Return normalized error (-3500 to +3500)
     return (int16_t)position - setpoint;
@@ -60,15 +60,15 @@ int16_t Sensors::getLineError() {
 
 bool Sensors::isIntersection() {
     // Read raw values first
-    qtr.read(sensorValues); [9, 8]
+    qtr.read(sensorValues);
 
     // Simple intersection detection:
     // If both the far-left and far-right sensors see black,
     // it's a T, X, or 90-degree turn.
     // Assumes calibrated "black" is > 800.
     // BUGFIX: Was not correctly indexing the array
-    bool left_sees_line = sensorValues > 800; // Index 0 (QTR_PIN_1)
-    bool right_sees_line = sensorValues > 800; // Last sensor (QTR_PIN_8)
+    bool left_sees_line = sensorValues[0] > 800; // Index 0 (QTR_PIN_1)
+    bool right_sees_line = sensorValues[7] > 800; // Last sensor (QTR_PIN_8)
 
     return left_sees_line && right_sees_line;
 }
