@@ -3,19 +3,19 @@
  * Main application for the IIT Bombay Mesmerise Line Maze Solver.
  * Implements the core Finite State Machine (FSM) and PID control loop.
  */
-#include <Arduino.h>
+
 #include "Pins.h"
 #include "Sensors.h"
 #include "Motors.h"
 #include "PathOptimization.h"
 #include <QuickPID.h>
-#include <Button.h> // Using a button library for debouncing
+// #include <Button.h> // Library removed to fix dependency error
 
 // === Global Objects ===
 Sensors sensors;
 Motors motors;
 PathOptimization optimizer;
-Button userButton(USER_BUTTON); // Assumes button on GPIO 0
+// Button userButton(USER_BUTTON); // Library object removed
 
 // === Robot State Machine ===
 enum RobotState {
@@ -29,9 +29,9 @@ enum RobotState {
 };
 RobotState currentState = CALIBRATING;
 
-// === Path Storage ===
-char rawPath = "";
-char optimizedPath = "";
+// === Path Storage (Using safe String class) ===
+String rawPath = "";
+String optimizedPath = "";
 int pathIndex = 0;
 
 // === PID Controller ===
@@ -40,7 +40,7 @@ float Kp = 0.05, Ki = 0.0001, Kd = 0.02;
 float pidInput, pidOutput, pidSetpoint = 0;
 // Base speed (0-255). Tune this for your robot.
 int baseSpeed = 150;
-QuickPID pid(&pidInput, &pidOutput, &pidSetpoint, Kp, Ki, Kd, QuickPID::Action::direct);
+QuickPID pid(&pidInput, &pidOutput, &pidSetpoint, Kp, Ki, Kd, QuickPID::Action::direct); [1]
 
 // === FSM Helper ===
 bool lineFoundAtIntersection = false;
@@ -53,7 +53,11 @@ void setup() {
     
     // 1. Initialize subsystems
     motors.setup();
-    userButton.begin();
+    
+    // Setup button with internal pull-up
+    // Assumes button is wired between USER_BUTTON pin (GPIO 0) and GND
+    pinMode(USER_BUTTON, INPUT_PULLUP); 
+    // userButton.begin(); // Removed
 
     // 2. Calibrate Sensors
     currentState = CALIBRATING;
@@ -62,7 +66,7 @@ void setup() {
     // 3. Setup PID
     pid.SetTunings(Kp, Ki, Kd);
     pid.SetSampleTimeUs(1000); // 1ms sample time
-    pid.SetMode(QuickPID::Mode::automatic);
+    pid.SetMode(QuickPID::Mode::automatic); [1]
 
     // 4. Wait for Run 1
     currentState = WAIT_FOR_RUN_1;
@@ -75,9 +79,14 @@ void loop() {
     switch (currentState) {
 
         case WAIT_FOR_RUN_1:
-            if (userButton.pressed()) {
-                Serial.println("Run 1 Starting!");
-                currentState = MAPPING;
+            // Replaced userButton.pressed() with digitalRead()
+            if (digitalRead(USER_BUTTON) == LOW) { // Button is pressed
+                delay(50); // Simple software debounce
+                if (digitalRead(USER_BUTTON) == LOW) { // Check again
+                    Serial.println("Run 1 Starting!");
+                    currentState = MAPPING;
+                    while(digitalRead(USER_BUTTON) == LOW); // Wait for button release
+                }
             }
             break;
 
@@ -88,7 +97,7 @@ void loop() {
                 motors.stopBrake();
                 motors.moveForward(TICKS_TO_CENTER); // Center on junction
                 
-                // LSRB Logic: Always try Left, then Straight, then Right.
+                // LSRB Logic: Always try Left, then Straight, then Right. [2, 3, 4]
                 
                 // 1. Try Left
                 motors.turn_90_left();
@@ -98,7 +107,7 @@ void loop() {
 
                 if (lineFoundAtIntersection) {
                     Serial.println("Intersection: Turned L");
-                    rawPath[pathIndex++] = 'L';
+                    rawPath += 'L'; // Append 'L' to the String
                 } else {
                     // 2. Try Straight (from original heading)
                     motors.turn_90_right(); // Return to center
@@ -108,7 +117,7 @@ void loop() {
 
                     if (lineFoundAtIntersection) {
                         Serial.println("Intersection: Went S");
-                        rawPath[pathIndex++] = 'S';
+                        rawPath += 'S'; // Append 'S'
                     } else {
                         // 3. Try Right
                         motors.turn_90_right();
@@ -118,19 +127,18 @@ void loop() {
                         
                         if (lineFoundAtIntersection) {
                             Serial.println("Intersection: Turned R");
-                            rawPath[pathIndex++] = 'R';
+                            rawPath += 'R'; // Append 'R'
                         } else {
                             // 4. Dead End (must be)
                             motors.turn_180_back(); // Already facing right, just turn 180
                             Serial.println("Intersection: Dead End, Turned B");
-                            rawPath[pathIndex++] = 'B';
+                            rawPath += 'B'; // Append 'B'
                         }
                     }
                 }
             } else if (sensors.isLineEnd()) {
                 motors.stopBrake();
-                rawPath[pathIndex] = '\0'; // Null terminate path
-                strcpy(optimizedPath, rawPath); // Copy for optimization
+                optimizedPath = rawPath; // Copy the string
                 
                 Serial.println("--- Run 1 Finished ---");
                 Serial.print("Raw Path: ");
@@ -142,7 +150,7 @@ void loop() {
 
         case OPTIMIZING:
             Serial.println("Optimizing path...");
-            optimizer.optimize(optimizedPath);
+            optimizer.optimize(optimizedPath); // Optimize the String
             
             Serial.print("Optimized Path: ");
             Serial.println(optimizedPath);
@@ -154,9 +162,14 @@ void loop() {
             break;
 
         case WAIT_FOR_RUN_2:
-            if (userButton.pressed()) {
-                Serial.println("Run 2 Starting!");
-                currentState = SOLVING;
+            // Replaced userButton.pressed() with digitalRead()
+            if (digitalRead(USER_BUTTON) == LOW) { // Button is pressed
+                delay(50); // Simple software debounce
+                if (digitalRead(USER_BUTTON) == LOW) { // Check again
+                    Serial.println("Run 2 Starting!");
+                    currentState = SOLVING;
+                    while(digitalRead(USER_BUTTON) == LOW); // Wait for button release
+                }
             }
             break;
 
@@ -167,7 +180,8 @@ void loop() {
                 motors.stopBrake();
                 motors.moveForward(TICKS_TO_CENTER); // Center on junction
 
-                char turn = optimizedPath[pathIndex++];
+                // Read turn from String. This is safe.
+                char turn = optimizedPath[pathIndex++]; 
                 
                 Serial.print("Intersection: Executing ");
                 Serial.println(turn);
