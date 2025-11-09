@@ -9,13 +9,11 @@
 #include "Motors.h"
 #include "PathOptimization.h"
 #include <QuickPID.h>
-// #include <Button.h> // Library removed to fix dependency error
 
 // === Global Objects ===
 Sensors sensors;
 Motors motors;
 PathOptimization optimizer;
-// Button userButton(USER_BUTTON); // Library object removed
 
 // === Robot State Machine ===
 enum RobotState {
@@ -40,7 +38,7 @@ float Kp = 0.05, Ki = 0.0001, Kd = 0.02;
 float pidInput, pidOutput, pidSetpoint = 0;
 // Base speed (0-255). Tune this for your robot.
 int baseSpeed = 150;
-QuickPID pid(&pidInput, &pidOutput, &pidSetpoint, Kp, Ki, Kd, QuickPID::Action::direct); [1]
+QuickPID pid(&pidInput, &pidOutput, &pidSetpoint, Kp, Ki, Kd, QuickPID::Action::direct);
 
 // === FSM Helper ===
 bool lineFoundAtIntersection = false;

@@ -5,7 +5,6 @@
 
 #include "Motors.h"
 #include <Arduino.h>
-#include <ESP32Encoder.h>
 
 Motors::Motors() {
     // Constructor
@@ -28,7 +27,8 @@ void Motors::setup() {
 
     // 4. Setup Encoders
     // Use ESP32 hardware pulse counters
-    ESP32Encoder::useInternalWeakPullResistors = UP;
+    puType pu_type = puType::up;
+    ESP32Encoder::useInternalWeakPullResistors = pu_type;
     leftEncoder.attachHalfQuad(ENCODER_L_A, ENCODER_L_B);
     rightEncoder.attachHalfQuad(ENCODER_R_A, ENCODER_R_B);
     
