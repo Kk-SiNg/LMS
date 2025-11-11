@@ -40,7 +40,7 @@ public:
     void turn_90_right();
     void turn_180_back();
     
-    // Helper function to move a precise distance
+    // Helper function to move a precise distance: used for centering on intersection
     void moveForward(int ticks);
 
     // Get encoder counts for debugging or advanced logic

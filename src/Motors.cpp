@@ -28,7 +28,7 @@ void Motors::setup() {
     // 4. Setup Encoders
     // Use ESP32 hardware pulse counters
     puType pu_type = puType::up;
-    ESP32Encoder::useInternalWeakPullResistors = pu_type;
+    ESP32Encoder::useInternalWeakPullResistors = pu_type; //to be called before attaching encoder pins
     leftEncoder.attachHalfQuad(ENCODER_L_A, ENCODER_L_B);
     rightEncoder.attachHalfQuad(ENCODER_R_A, ENCODER_R_B);
     

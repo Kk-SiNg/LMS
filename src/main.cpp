@@ -54,8 +54,7 @@ void setup() {
     
     // Setup button with internal pull-up
     // Assumes button is wired between USER_BUTTON pin (GPIO 0) and GND
-    pinMode(USER_BUTTON, INPUT_PULLUP); 
-    // userButton.begin(); // Removed
+    pinMode(USER_BUTTON, INPUT_PULLUP);
 
     // 2. Calibrate Sensors
     currentState = CALIBRATING;
@@ -64,7 +63,7 @@ void setup() {
     // 3. Setup PID
     pid.SetTunings(Kp, Ki, Kd);
     pid.SetSampleTimeUs(1000); // 1ms sample time
-    pid.SetMode(QuickPID::Control(1));
+    pid.SetMode(QuickPID::Control(1)); //(1)--->Automatically calculates and allots value to pidOutput
 
     // 4. Wait for Run 1
     currentState = WAIT_FOR_RUN_1;
@@ -136,7 +135,8 @@ void loop() {
                         }
                     }
                 }
-            } else if (sensors.isLineEnd()) {
+            } 
+            else if (sensors.isLineEnd()) {
                 motors.stopBrake();
                 optimizedPath = rawPath; // Copy the string
                 
@@ -181,21 +181,23 @@ void loop() {
                 motors.moveForward(TICKS_TO_CENTER); // Center on junction
 
                 // Read turn from String. This is safe.
-                char turn = optimizedPath[pathIndex++]; 
+                char turn = optimizedPath[pathIndex++];
                 
                 Serial.print("Intersection: Executing ");
                 Serial.println(turn);
 
                 if (turn == 'L') {
                     motors.turn_90_left();
-                } else if (turn == 'S') {
+                } 
+                else if (turn == 'S') {
                     // Do nothing, just continue straight
-                } else if (turn == 'R') {
+                } 
+                else if (turn == 'R') {
                     motors.turn_90_right();
                 }
-                // 'B' should not be in the optimized path.
-                
-            } else if (sensors.isLineEnd()) {
+                // 'B' should not be in the optimized path.    
+            }
+            else if (sensors.isLineEnd()) {
                 motors.stopBrake();
                 Serial.println("--- MAZE SOLVED ---");
                 currentState = FINISHED;
@@ -221,8 +223,8 @@ void runPID() {
     
     int correction = (int)pidOutput;
     
-    int leftSpeed = baseSpeed - correction;
-    int rightSpeed = baseSpeed + correction;
+    int leftSpeed = baseSpeed + correction;
+    int rightSpeed = baseSpeed - correction;
 
     motors.setSpeeds(leftSpeed, rightSpeed);
 }

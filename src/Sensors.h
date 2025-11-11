@@ -31,7 +31,7 @@ public:
 
 private:
     QTRSensors qtr;
-    // BUGFIX: This must be an array to hold the values
+    // BUGFIX: This must be an array to hold the values of min size 8
     uint16_t sensorValues[8]; 
 
     // Setpoint is the "perfectly centered" value (SensorCount-1) * 1000 / 2

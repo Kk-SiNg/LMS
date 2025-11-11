@@ -15,7 +15,7 @@ Sensors::Sensors() {
         QTR_PIN_5, QTR_PIN_6, QTR_PIN_7, QTR_PIN_8
     }, SensorCount);
     qtr.setEmitterPin(QTR_EMITTER_PIN);
-    qtr.setTimeout(2500); // 2.5ms timeout
+    qtr.setTimeout(2500); // 2.5ms timeout(i.e. if a sensor do not read anything for 2.5 sec then this means it is in background region and not on line)
 }
 
 void Sensors::setup() {
@@ -53,7 +53,7 @@ int16_t Sensors::getLineError() {
     // Get calibrated line position (0-7000)
     // This function reads the calibrated values into our sensorValues array
     uint16_t position = qtr.readLineBlack(sensorValues);
-    
+
     // Return normalized error (-3500 to +3500)
     return (int16_t)position - setpoint;
 }
@@ -66,7 +66,6 @@ bool Sensors::isIntersection() {
     // If both the far-left and far-right sensors see black,
     // it's a T, X, or 90-degree turn.
     // Assumes calibrated "black" is > 800.
-    // BUGFIX: Was not correctly indexing the array
     bool left_sees_line = sensorValues[0] > 800; // Index 0 (QTR_PIN_1)
     bool right_sees_line = sensorValues[7] > 800; // Last sensor (QTR_PIN_8)
 
