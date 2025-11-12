@@ -66,11 +66,34 @@ bool Sensors::isIntersection() {
     // If both the far-left and far-right sensors see black,
     // it's a T, X, or 90-degree turn.
     // Assumes calibrated "black" is > 800.
-    bool left_sees_line = sensorValues[0] > 800; // Index 0 (QTR_PIN_1)
-    bool right_sees_line = sensorValues[7] > 800; // Last sensor (QTR_PIN_8)
+    bool left_sees_line = sensorValues[0] > lineThreshold; // Index 0 (QTR_PIN_1)
+    bool right_sees_line = sensorValues[7] > lineThreshold; // Last sensor (QTR_PIN_8)
 
     return left_sees_line && right_sees_line;
 }
+
+// NEW: Implementation of the path-checking function
+PathOptions Sensors::getOpenPaths() {
+    // This function assumes the robot has moved forward to center
+    // itself over the junction. It reads all 8 sensors to see
+    // which paths (L, S, R) are available.
+    
+    qtr.read(sensorValues);
+    
+    PathOptions paths;
+
+    // Check for a left path (using the left-most sensors)
+    // Sensor 7 is QTR_PIN_8, Sensor 6 is QTR_PIN_7
+    paths.left = (sensorValues[0] > lineThreshold || sensorValues[1] > lineThreshold);
+    
+    // Check for a right path (using the right-most sensors)
+    // Sensor 0 is QTR_PIN_1, Sensor 1 is QTR_PIN_2
+    paths.right = (sensorValues[7] > lineThreshold || sensorValues[6] > lineThreshold);
+    
+    return paths;
+}
+
+
 
 bool Sensors::isLineEnd() {
     // Read raw values

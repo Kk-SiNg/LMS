@@ -94,48 +94,43 @@ void loop() {
 
             if (sensors.isIntersection()) {
                 motors.stopBrake();
+
+                // NEW "SEEING" LSRB LOGIC [16, 13, 14]
+                // 1. Check all available paths at once(left and right)
+                PathOptions paths = sensors.getOpenPaths();
+
                 motors.moveForward(TICKS_TO_CENTER); // Center on junction
-                
-                // LSRB Logic: Always try Left, then Straight, then Right. [2, 3, 4]
-                
-                // 1. Try Left
-                motors.turn_90_left();
-                delay(100); // Settle
-                pidInput = sensors.getLineError();
-                lineFoundAtIntersection = abs(pidInput) < 2000;
 
-                if (lineFoundAtIntersection) {
-                    Serial.println("Intersection: Turned L");
+                uint16_t values[8];         //get the sensors values after moving forward ---> for availability of straight path
+                sensors.readRaw(values);
+
+                // 2. Apply LSRB (Left-Hand-on-the-Wall) priority
+                if (paths.left) {
+                    Serial.println("Intersection: Path open Left. Turning L.");
+                    motors.turn_90_left();
                     rawPath += 'L'; // Append 'L' to the String
-                } else {
-                    // 2. Try Straight (from original heading)
-                    motors.turn_90_right(); // Return to center
-                    delay(100);
-                    pidInput = sensors.getLineError();
-                    lineFoundAtIntersection = abs(pidInput) < 2000;
-
-                    if (lineFoundAtIntersection) {
-                        Serial.println("Intersection: Went S");
-                        rawPath += 'S'; // Append 'S'
-                    } else {
-                        // 3. Try Right
-                        motors.turn_90_right();
-                        delay(100);
-                        pidInput = sensors.getLineError();
-                        lineFoundAtIntersection = abs(pidInput) < 2000;
-                        
-                        if (lineFoundAtIntersection) {
-                            Serial.println("Intersection: Turned R");
-                            rawPath += 'R'; // Append 'R'
-                        } else {
-                            // 4. Dead End (must be)
-                            motors.turn_180_back(); // Already facing right, just turn 180
-                            Serial.println("Intersection: Dead End, Turned B");
-                            rawPath += 'B'; // Append 'B'
-                        }
-                    }
                 }
-            } 
+                else if (values[3] > 800 || values[4] > 800) {
+                    Serial.println("Intersection: Path open Straight. Going S.");
+                    // No turn needed, just continue
+                    rawPath += 'S'; // Append 'S'
+                }
+                else if (paths.right) {
+                    Serial.println("Intersection: Path open Right. Turning R.");
+                    motors.turn_90_right();
+                    rawPath += 'R'; // Append 'R'
+                }
+                else {
+                    // 4. Dead End (no paths open)
+                    Serial.println("Intersection: Dead End. Turning B.");
+                    motors.turn_180_back();
+                    rawPath += 'B'; // Append 'B'
+                }
+                
+                // Small delay to move past the intersection line
+                delay(100); 
+
+            }
             else if (sensors.isLineEnd()) {
                 motors.stopBrake();
                 optimizedPath = rawPath; // Copy the string
