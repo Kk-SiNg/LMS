@@ -12,7 +12,7 @@ class PathOptimization {
 public:
     PathOptimization();
 
-    // Optimizes the path string in-place.
-    // Runs iteratively until no more changes can be made.
-    void optimize(String &path); // Changed to take a String reference
+    // Optimizes the path string and its corresponding segment lengths array in-place.
+    // pathLength is passed by reference and will be updated.
+    void optimize(String &path, long segments[10000], int &pathLength);
 };

@@ -69,7 +69,7 @@ bool Sensors::isIntersection() {
     bool left_sees_line = sensorValues[0] > lineThreshold; // Index 0 (QTR_PIN_1)
     bool right_sees_line = sensorValues[7] > lineThreshold; // Last sensor (QTR_PIN_8)
 
-    return left_sees_line && right_sees_line;
+    return left_sees_line || right_sees_line;
 }
 
 // NEW: Implementation of the path-checking function

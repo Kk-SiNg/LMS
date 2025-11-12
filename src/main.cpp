@@ -10,6 +10,13 @@
 #include "PathOptimization.h"
 #include <QuickPID.h>
 
+// === Tuning Constants ===
+#define MAX_PATH_LENGTH 100    // Max number of segments
+#define HIGH_SPEED 255         // Full throttle speed for Run 2
+#define BASE_SPEED 150         // Normal mapping and turning speed
+#define SLOWDOWN_TICKS 500     // How many ticks before intersection to slow down
+
+
 // === Global Objects ===
 Sensors sensors;
 Motors motors;
@@ -28,9 +35,24 @@ enum RobotState {
 RobotState currentState = CALIBRATING;
 
 // === Path Storage (Using safe String class) ===
+// === Path & Distance Storage ===
 String rawPath = "";
-String optimizedPath = "";
+long pathSegments[10000];   //taking large size of array for storing path lengths to avoid overflow.
 int pathIndex = 0;
+
+String optimizedPath = "";
+long optimizedSegments[10000];
+int optimizedPathLength = 0;
+int solvePathIndex = 0; // Index used during the solving run
+
+// === Solving Sub-State Machine ===
+enum SolvingSubState {
+    SOLVE_TURN,
+    SOLVE_FAST_RUN,
+    SOLVE_SLOW_RUN,
+    SOLVE_FINAL_RUN
+};
+SolvingSubState solveState = SOLVE_TURN;
 
 // === PID Controller ===
 // These constants MUST be tuned.
@@ -40,8 +62,8 @@ float pidInput, pidOutput, pidSetpoint = 0;
 int baseSpeed = 150;
 QuickPID pid(&pidInput, &pidOutput, &pidSetpoint, Kp, Ki, Kd, QuickPID::Action::direct);
 
-// === FSM Helper ===
-bool lineFoundAtIntersection = false;
+// // === FSM Helper ===
+// bool lineFoundAtIntersection = false;
 
 
 void setup() {
@@ -71,7 +93,7 @@ void setup() {
     Serial.println("Press button to begin Run 1 (Mapping)...");
 }
 
-void runPID();
+void runPID(int currentBaseSpeed);
 
 void loop() {
     
@@ -90,10 +112,13 @@ void loop() {
             break;
 
         case MAPPING: // Run 1: Follow line and map using LSRB
-            runPID(); // Follow the line
+            runPID(BASE_SPEED); // Follow the line
 
             if (sensors.isIntersection()) {
                 motors.stopBrake();
+
+                // Get distance of the segment just traveled
+                long segmentTicks = motors.getAverageCount();
 
                 // NEW "SEEING" LSRB LOGIC [16, 13, 14]
                 // 1. Check all available paths at once(left and right)
@@ -126,15 +151,22 @@ void loop() {
                     motors.turn_180_back();
                     rawPath += 'B'; // Append 'B'
                 }
+
+
+                //Store the distance for the turn
+                pathSegments[pathIndex] = segmentTicks;
+                pathIndex++;
                 
-                // Small delay to move past the intersection line
-                delay(100); 
+                //Clear encoders to start counting the *next* segment
+                motors.clearEncoders();
+                delay(100); // Settle
 
             }
             else if (sensors.isLineEnd()) {
                 motors.stopBrake();
                 optimizedPath = rawPath; // Copy the string
-                
+                optimizedPathLength = optimizedPath.length();
+
                 Serial.println("--- Run 1 Finished ---");
                 Serial.print("Raw Path: ");
                 Serial.println(rawPath);
@@ -144,17 +176,30 @@ void loop() {
             break;
 
         case OPTIMIZING:
+        {
             Serial.println("Optimizing path...");
-            optimizer.optimize(optimizedPath); // Optimize the String
+            bool changesMade = true;
             
-            Serial.print("Optimized Path: ");
-            Serial.println(optimizedPath);
+            while(changesMade) {
+                int oldLength = optimizedPathLength;
+                optimizer.optimize(optimizedPath, optimizedSegments, optimizedPathLength);
+                changesMade = (oldLength != optimizedPathLength);
+            }
+            
+            Serial.print("Optimized Path: "); Serial.println(optimizedPath);
+            Serial.println("Optimized Segments:");
+            for(int i = 0; i < optimizedPathLength; i++) {
+                Serial.print(optimizedPath[i]);
+                Serial.print(": ");
+                Serial.println(optimizedSegments[i]);
+            }
             
             Serial.println("Place at START.");
             Serial.println("Press button to begin Run 2 (Solving)...");
             currentState = WAIT_FOR_RUN_2;
-            pathIndex = 0; // Reset index for optimized path
             break;
+        }
+
 
         case WAIT_FOR_RUN_2:
             // Replaced userButton.pressed() with digitalRead()
@@ -168,34 +213,71 @@ void loop() {
             }
             break;
 
-        case SOLVING: // Run 2: Follow optimized path
-            runPID(); // Follow the line
-
-            if (sensors.isIntersection()) {
-                motors.stopBrake();
-                motors.moveForward(TICKS_TO_CENTER); // Center on junction
-
-                // Read turn from String. This is safe.
-                char turn = optimizedPath[pathIndex++];
+        case SOLVING: // Run 2: High-speed, distance-based execution
+            
+            if (solveState == SOLVE_TURN) {
+                // We are at an intersection, ready to execute a turn.
+                char turn = optimizedPath[solvePathIndex];
                 
-                Serial.print("Intersection: Executing ");
-                Serial.println(turn);
+                Serial.print("At intersection. Executing: "); Serial.println(turn);
 
-                if (turn == 'L') {
-                    motors.turn_90_left();
-                } 
-                else if (turn == 'S') {
-                    // Do nothing, just continue straight
-                } 
-                else if (turn == 'R') {
-                    motors.turn_90_right();
+                if (turn == 'L') motors.turn_90_left();
+                else if (turn == 'R') motors.turn_90_right();
+                // For 'S' (Straight), we do nothing.
+
+                // Check if this was the last segment
+                if (solvePathIndex >= optimizedPathLength - 1) {
+                    solveState = SOLVE_FINAL_RUN;
+                    Serial.println("Last segment. Running to finish.");
                 }
-                // 'B' should not be in the optimized path.    
+                else {
+                    // Not the last segment. Clear encoders and start fast run.
+                    motors.clearEncoders();
+                    solveState = SOLVE_FAST_RUN;
+                    Serial.println("Entering FAST RUN.");
+                }
+                delay(100); // Settle after turn
+
             }
-            else if (sensors.isLineEnd()) {
-                motors.stopBrake();
-                Serial.println("--- MAZE SOLVED ---");
-                currentState = FINISHED;
+            else if (solveState == SOLVE_FAST_RUN) {
+                long currentTicks = motors.getAverageCount();
+                long targetTicks = optimizedSegments[solvePathIndex + 1]; // Get *next* segment's length
+
+                if (currentTicks < (targetTicks - SLOWDOWN_TICKS)) {
+                    runPID(HIGH_SPEED);
+                }
+                else {
+                    // We're close. Transition to slow run.
+                    solveState = SOLVE_SLOW_RUN;
+                    Serial.println("Entering SLOW RUN.");
+                }
+            
+            }
+            else if (solveState == SOLVE_SLOW_RUN) {
+                long currentTicks = motors.getAverageCount();
+                long targetTicks = optimizedSegments[solvePathIndex + 1];
+
+                if (currentTicks < targetTicks) {
+                    runPID(BASE_SPEED);
+                }
+                else {
+                    // We have arrived at the next intersection.
+                    motors.stopBrake();
+                    motors.moveForward(TICKS_TO_CENTER); // Re-center
+                    solvePathIndex++; // Move to the next path command
+                    solveState = SOLVE_TURN; // Go back to turning logic
+                    Serial.println("Arrived at intersection.");
+                }
+            
+            }
+            else if (solveState == SOLVE_FINAL_RUN) {
+                // Just follow the line until the end is detected
+                runPID(BASE_SPEED);
+                if (sensors.isLineEnd()) {
+                    motors.stopBrake();
+                    Serial.println("--- MAZE SOLVED ---");
+                    currentState = FINISHED;
+                }
             }
             break;
 
@@ -212,14 +294,14 @@ void loop() {
 }
 
 // PID Control Loop Function
-void runPID() {
+void runPID(int currentBaseSpeed) {
     pidInput = sensors.getLineError();
     pid.Compute();
     
     int correction = (int)pidOutput;
     
-    int leftSpeed = baseSpeed + correction;
-    int rightSpeed = baseSpeed - correction;
+    int leftSpeed = currentBaseSpeed + correction;
+    int rightSpeed = currentBaseSpeed - correction;
 
     motors.setSpeeds(leftSpeed, rightSpeed);
 }

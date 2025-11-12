@@ -47,6 +47,14 @@ public:
     long getLeftCount();
     long getRightCount();
 
+    // === NEW Encoder Helper Functions ===
+    
+    // Get average encoder count from both wheels
+    long getAverageCount();
+
+    // Clear counts on both encoders
+    void clearEncoders();
+
 private:
     // ESP32 ledc PWM channels
     const int pwm_channel_left = 0;

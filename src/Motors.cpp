@@ -138,3 +138,15 @@ long Motors::getLeftCount() {
 long Motors::getRightCount() {
     return rightEncoder.getCount();
 }
+
+// === NEW Encoder Helper Functions ===
+
+long Motors::getAverageCount() {
+    // Return average of left and right. Cast to long to prevent overflow.
+    return (long)(leftEncoder.getCount() + rightEncoder.getCount()) / 2;
+}
+
+void Motors::clearEncoders() {
+    leftEncoder.clearCount();
+    rightEncoder.clearCount();
+}
