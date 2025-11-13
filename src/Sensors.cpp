@@ -59,23 +59,24 @@ int16_t Sensors::getLineError() {
 }
 
 bool Sensors::isIntersection() {
-    // Read raw values first
-    qtr.read(sensorValues);
-
     // Simple intersection detection:
-    // If both the far-left and far-right sensors see black,
     // it's a T, X, or 90-degree turn.
     // Assumes calibrated "black" is > 800.
-    bool left_sees_line = sensorValues[0] > 800; // Index 0 (QTR_PIN_1)
-    bool right_sees_line = sensorValues[7] > 800; // Last sensor (QTR_PIN_8)
 
-    return left_sees_line && right_sees_line;
+    // Count how many sensors see the line
+    uint8_t sensorsOnLine = 0;
+    for (uint8_t i = 0; i < SensorCount; i++) {
+        if (sensorValues[i] > 800) {
+            sensorsOnLine++;
+        }
+    }
+    
+    // A real junction (T, X, or 90-degree turn)
+    // will have 3 or more sensors on the line.
+    return sensorsOnLine >= 3;
 }
 
 bool Sensors::isLineEnd() {
-    // Read raw values
-    qtr.read(sensorValues);
-
     // Check if all sensors are on a white surface
     // Assumes calibrated "white" is < 200.
     for (uint8_t i = 0; i < SensorCount; i++) {
