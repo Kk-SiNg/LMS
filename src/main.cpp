@@ -129,7 +129,7 @@ void loop() {
                             rawPath += 'R'; // Append 'R'
                         } else {
                             // 4. Dead End (must be)
-                            motors.turn_180_back(); // Already facing right, just turn 180
+                            motors.turn_90_right(); // Already facing right, just turn 90 degree clockwise
                             Serial.println("Intersection: Dead End, Turned B");
                             rawPath += 'B'; // Append 'B'
                         }
