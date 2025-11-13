@@ -59,9 +59,6 @@ int16_t Sensors::getLineError() {
 }
 
 bool Sensors::isIntersection() {
-    // Read raw values first
-    qtr.read(sensorValues);
-
     // Simple intersection detection:
     // it's a T, X, or 90-degree turn.
     // Assumes calibrated "black" is > 800.
@@ -80,9 +77,6 @@ bool Sensors::isIntersection() {
 }
 
 bool Sensors::isLineEnd() {
-    // Read raw values
-    qtr.read(sensorValues);
-
     // Check if all sensors are on a white surface
     // Assumes calibrated "white" is < 200.
     for (uint8_t i = 0; i < SensorCount; i++) {
