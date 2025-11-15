@@ -39,12 +39,12 @@ const uint8_t SensorCount = 8;
 // 4 pins: 2 inputs per motor
 
 // Left Encoder
-#define ENCODER_L_A 34
-#define ENCODER_L_B 35
+#define ENCODER_L_A 35
+#define ENCODER_L_B 34
 
 // Right Encoder
-#define ENCODER_R_A 36
-#define ENCODER_R_B 39
+#define ENCODER_R_A 39
+#define ENCODER_R_B 36
 
 // === MISC ===
 #define ONBOARD_LED 5// Built-in LED on most ESP32 boards

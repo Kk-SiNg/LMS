@@ -83,7 +83,7 @@ void Motors::turn_90_left() {
     leftEncoder.clearCount();
     rightEncoder.clearCount();
     
-    setSpeeds(-180, 180); // Pivot turn
+    setSpeeds(180, -180); // Pivot turn
     
     // Wait until the right wheel has moved the required distance
     while (rightEncoder.getCount() < TICKS_FOR_90_DEG) {
@@ -96,7 +96,7 @@ void Motors::turn_90_right() {
     leftEncoder.clearCount();
     rightEncoder.clearCount();
     
-    setSpeeds(180, -180); // Pivot turn
+    setSpeeds(-180, 180); // Pivot turn
     
     // Wait until the left wheel has moved the required distance
     while (leftEncoder.getCount() < TICKS_FOR_90_DEG) {
