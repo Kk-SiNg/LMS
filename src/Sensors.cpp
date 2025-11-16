@@ -52,7 +52,7 @@ void Sensors::setup() {
 int16_t Sensors::getLineError() {
     // Get calibrated line position (0-7000)
     // This function reads the calibrated values into our sensorValues array
-    uint16_t position = qtr.readLineBlack(sensorValues);
+    uint16_t position = qtr.readLineWhite(sensorValues);
 
     // Return normalized error (-3500 to +3500)
     return (int16_t)position - setpoint;
