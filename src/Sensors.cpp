@@ -65,9 +65,9 @@ bool Sensors::isIntersection() {
     // Simple intersection detection:
     // If both the far-left and far-right sensors see black,
     // it's a T, X, or 90-degree turn.
-    // Assumes calibrated "black" is > 800.
-    bool left_sees_line = sensorValues[0] > lineThreshold; // Index 0 (QTR_PIN_1)
-    bool right_sees_line = sensorValues[7] > lineThreshold; // Last sensor (QTR_PIN_8)
+    // Assumes calibrated "white" is < 300.
+    bool left_sees_line = sensorValues[0] < lineThreshold; // Index 0 (QTR_PIN_1)
+    bool right_sees_line = sensorValues[7] < lineThreshold; // Last sensor (QTR_PIN_8)
 
     return left_sees_line || right_sees_line;
 }
@@ -84,15 +84,14 @@ PathOptions Sensors::getOpenPaths() {
 
     // Check for a left path (using the left-most sensors)
     // Sensor 7 is QTR_PIN_8, Sensor 6 is QTR_PIN_7
-    paths.left = (sensorValues[0] > lineThreshold || sensorValues[1] > lineThreshold);
+    paths.right = (sensorValues[0] < lineThreshold || sensorValues[1] < lineThreshold);
     
     // Check for a right path (using the right-most sensors)
     // Sensor 0 is QTR_PIN_1, Sensor 1 is QTR_PIN_2
-    paths.right = (sensorValues[7] > lineThreshold || sensorValues[6] > lineThreshold);
+    paths.left = (sensorValues[7] < lineThreshold || sensorValues[6] < lineThreshold);
     
     return paths;
 }
-
 
 
 bool Sensors::isLineEnd() {
@@ -100,13 +99,13 @@ bool Sensors::isLineEnd() {
     qtr.read(sensorValues);
 
     // Check if all sensors are on a white surface
-    // Assumes calibrated "white" is < 200.
+    // Assumes calibrated "black" is > 200.
     for (uint8_t i = 0; i < SensorCount; i++) {
-        if (sensorValues[i] > 200) {
-            return false; // Found a non-white reading
+        if (sensorValues[i] < 200) {
+            return false; // Found a white reading
         }
     }
-    return true; // All sensors read white
+    return true; // All sensors read black
 }
 
 void Sensors::readRaw(uint16_t* values) {
