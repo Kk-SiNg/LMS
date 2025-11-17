@@ -87,7 +87,7 @@ void Motors::turn_90_left() {
     
     // Wait until the right wheel has moved the required distance
     while (rightEncoder.getCount() < TICKS_FOR_90_DEG) {
-        // block
+        delay(1);
     }
     stopBrake();
 }
@@ -100,7 +100,7 @@ void Motors::turn_90_right() {
     
     // Wait until the left wheel has moved the required distance
     while (leftEncoder.getCount() < TICKS_FOR_90_DEG) {
-        // block
+        delay(1);
     }
     stopBrake();
 }
@@ -112,10 +112,16 @@ void Motors::turn_180_back() {
     setSpeeds(180, -180); // Pivot turn
     
     // Wait for 180 degrees
-    while (leftEncoder.getCount() < TICKS_FOR_180_DEG) {
-        // block
+    while (rightEncoder.getCount() < TICKS_FOR_180_DEG) {
+        delay(1);
     }
     stopBrake();
+}
+
+void Motors::rotate(){
+    leftEncoder.clearCount();
+    rightEncoder.clearCount();
+    setSpeeds(-180,180);
 }
 
 void Motors::moveForward(int ticks) {
@@ -126,7 +132,7 @@ void Motors::moveForward(int ticks) {
 
     // Wait until average distance is met
     while ((leftEncoder.getCount() + rightEncoder.getCount()) / 2 < ticks) {
-        // block
+        delay(1);
     }
     stopBrake();
 }

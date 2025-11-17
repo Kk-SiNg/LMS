@@ -9,7 +9,7 @@
 
 // === SENSOR ARRAY (QTR-8RC) ===
 // 8 sensor inputs + 1 emitter control
-#define QTR_PIN_1 2 // Sensor 1 (Right-most)
+#define QTR_PIN_1 15 // Sensor 1 (Right-most)
 #define QTR_PIN_2 4
 #define QTR_PIN_3 16
 #define QTR_PIN_4 17
@@ -47,5 +47,5 @@ const uint8_t SensorCount = 8;
 #define ENCODER_R_B 36
 
 // === MISC ===
-#define ONBOARD_LED 5// Built-in LED on most ESP32 boards
-#define USER_BUTTON 15 // Button to start runs (requires pull-up resistor)
+#define ONBOARD_LED 2// Built-in LED on most ESP32 boards
+#define USER_BUTTON  23// Button to start runs (requires pull-up resistor)

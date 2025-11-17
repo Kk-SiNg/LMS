@@ -32,6 +32,9 @@ public:
     // Check if the line has ended (dead end or finish line).
     bool isLineEnd();
 
+    //check for finishing.
+    bool isFinished();
+
     // NEW: Function to check all available paths at an intersection
     PathOptions getOpenPaths();
 
@@ -46,5 +49,6 @@ private:
     const int16_t setpoint = (SensorCount - 1) * 1000 / 2; // = 3500
     
     // Threshold for detecting a black line
-    const uint16_t lineThreshold = 800;
+    const uint16_t lineThreshold = 300;
+    const uint16_t black_surface = 800;
 };

@@ -17,7 +17,7 @@ void PathOptimization::optimize(String &path, long segments[10000], int &pathLen
     // We must build a new path and segment array, as in-place modification
     // with string/array shifting is too complex and slow.
     String newPath = "";
-    long newSegments[10000]; // Assume max 100 segments
+    long newSegments[10000]; // Assume max 10000 segments
     int newIndex = 0;
     
     int i = 0;
@@ -78,8 +78,17 @@ void PathOptimization::optimize(String &path, long segments[10000], int &pathLen
         newIndex++;
     }
 
-    // Copy the newly optimized path and segments back
+//     // Copy the newly optimized path and segments back
+//     path = newPath;
+//     pathLength = newIndex;
+//     segments = newSegments;
+
+// Replace the end of the function with this:
     path = newPath;
     pathLength = newIndex;
-    segments = newSegments;
+
+    // Manually copy data back to the source array
+    for(int k=0; k < newIndex; k++){
+        segments[k] = newSegments[k];
+    }
 }

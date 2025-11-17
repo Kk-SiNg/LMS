@@ -4,6 +4,7 @@
  */
 
 #include "Sensors.h"
+#include "Motors.h"
 #include <Arduino.h>
 
 Sensors::Sensors() {
@@ -20,7 +21,7 @@ Sensors::Sensors() {
 
 void Sensors::setup() {
     Serial.println("--- Sensor Calibration START ---");
-    Serial.println("Sweep robot over line and background for 10s...");
+    Serial.println("Sweeping robot over line and background for 10s...");
     pinMode(ONBOARD_LED, OUTPUT);
     digitalWrite(ONBOARD_LED, HIGH);
 
@@ -94,7 +95,7 @@ PathOptions Sensors::getOpenPaths() {
 }
 
 
-bool Sensors::isLineEnd() {
+bool Sensors::isFinished() {
     // Read raw values
     qtr.read(sensorValues);
 
@@ -102,11 +103,24 @@ bool Sensors::isLineEnd() {
     // Assumes calibrated "black" is > 200.
     for (uint8_t i = 0; i < SensorCount; i++) {
         if (sensorValues[i] < 200) {
-            return false; // Found a white reading
+            return false; // Found a black reading
         }
     }
+    return true; // All sensors read white
+}
+
+bool Sensors::isLineEnd(){
+    // Read raw values
+    qtr.read(sensorValues);
+
+    for (uint8_t i = 0; i < SensorCount; i++) {
+            if (sensorValues[i] > black_surface) {
+                return false; // Found a white reading
+            }
+        }
     return true; // All sensors read black
 }
+
 
 void Sensors::readRaw(uint16_t* values) {
     qtr.read(values);

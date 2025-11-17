@@ -39,6 +39,7 @@ public:
     void turn_90_left();
     void turn_90_right();
     void turn_180_back();
+    void rotate();
     
     // Helper function to move a precise distance: used for centering on intersection
     void moveForward(int ticks);

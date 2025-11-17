@@ -78,9 +78,11 @@ void setup() {
     // Assumes button is wired between USER_BUTTON pin (GPIO 0) and GND
     pinMode(USER_BUTTON, INPUT_PULLUP);
 
-    // 2. Calibrate Sensors
+    // 2. Calibrate Sensors while rotating
     currentState = CALIBRATING;
+    motors.rotate();
     sensors.setup(); // This blocks for 10s
+    motors.stopBrake();
 
     // 3. Setup PID
     pid.SetTunings(Kp, Ki, Kd);
@@ -120,7 +122,7 @@ void loop() {
                 // Get distance of the segment just traveled
                 long segmentTicks = motors.getAverageCount();
 
-                // NEW "SEEING" LSRB LOGIC [16, 13, 14]
+                // NEW "SEEING" LSRB LOGIC
                 // 1. Check all available paths at once(left and right)
                 PathOptions paths = sensors.getOpenPaths();
 
@@ -145,13 +147,6 @@ void loop() {
                     motors.turn_90_right();
                     rawPath += 'R'; // Append 'R'
                 }
-                else {
-                    // 4. Dead End (no paths open)
-                    Serial.println("Intersection: Dead End. Turning B.");
-                    motors.turn_180_back();
-                    rawPath += 'B'; // Append 'B'
-                }
-
 
                 //Store the distance for the turn
                 pathSegments[pathIndex] = segmentTicks;
@@ -160,9 +155,27 @@ void loop() {
                 //Clear encoders to start counting the *next* segment
                 motors.clearEncoders();
                 delay(100); // Settle
-
             }
-            else if (sensors.isLineEnd()) {
+
+            else if (sensors.isLineEnd()){
+
+                long segmentTicks = motors.getAverageCount();
+
+                
+                // 4. Dead End (no paths open)
+                Serial.println("Dead End. Turning B.");
+                motors.turn_180_back();
+                rawPath += 'B'; // Append 'B'
+                //Store the distance for the turn
+                pathSegments[pathIndex] = segmentTicks;
+                pathIndex++;
+            
+                //Clear encoders to start counting the *next* segment
+                motors.clearEncoders();
+                delay(100); // Settle
+            }
+
+            else if (sensors.isFinished()) {
                 motors.stopBrake();
                 optimizedPath = rawPath; // Copy the string
                 optimizedPathLength = optimizedPath.length();
@@ -300,8 +313,12 @@ void runPID(int currentBaseSpeed) {
     
     int correction = (int)pidOutput;
     
-    int leftSpeed = currentBaseSpeed + correction;
-    int rightSpeed = currentBaseSpeed - correction;
+    // int leftSpeed = currentBaseSpeed + correction;
+    // int rightSpeed = currentBaseSpeed - correction;
+
+    // Fix in main.cpp runPID function
+    int leftSpeed = currentBaseSpeed - correction; // changed + to -
+    int rightSpeed = currentBaseSpeed + correction; // changed - to +
 
     motors.setSpeeds(leftSpeed, rightSpeed);
 }
